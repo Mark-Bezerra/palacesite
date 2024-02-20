@@ -135,7 +135,10 @@ class LobbyConsumer(AsyncWebsocketConsumer):
 
     async def game_update(self, event):
         player = event["player"]
-        role = event["role"]
+        if "role" in event:
+            role = event["role"]
+        else:
+            role = ""
         update = event["update"]
 
         await self.send(
@@ -196,6 +199,7 @@ class GameConsumer(SyncConsumer):
     roles = ["King", "Guard", "Beast"]
     lobby = True
     capacity = 3
+    player_count = 0
     random.shuffle(roles)
     group = ""
 
@@ -214,18 +218,21 @@ class GameConsumer(SyncConsumer):
                     "type": "refresh_lobby",
                 },
             )
-            self.capacity -= 1
+            self.player_count += 1
 
-            if self.capacity == 0:
-                print("starting in 5")
-                sleep(5)
+            if self.player_count == self.capacity:
+
+                sleep(1)
+
                 self.group_message(
                     {
-                        "type": "chat_message",
-                        "message": "Game beginning!",
-                        "username": "Room",
+                        "type": "update",
+                        "update": "beginning",
+                        "message": "",
                     },
                 )
+
+                sleep(5)
 
                 self.lobby = False
 
@@ -266,7 +273,7 @@ class GameConsumer(SyncConsumer):
             player_model.ingame = None
             player_model.save()
 
-            capacity += 1
+            self.player_count -= 1
 
             self.group_message(
                 {
@@ -281,7 +288,7 @@ class GameConsumer(SyncConsumer):
             self.group_message(
                 {
                     "type": "game_update",
-                    "update": "disconnect",
+                    "update": "disconnected",
                     "player": username,
                 },
             )

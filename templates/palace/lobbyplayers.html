@@ -1,14 +1,25 @@
 <!-- Here is the HTML for the player-list sidebar -->
+<!-- The HTML file had a context object passed into it called
+players, containing an array of each player within the specific lobby -->
+
 <ul class="vstack list-group list-group-flush" id="lobbyplayers">
-    <li class="list-group-item player">Players:</li>
+    <li class="list-group-item player d-flex justify-content-between align-items-center py-2">
+        <span>Players:</span>
+        <span id="capacity">
+            <span id="player-count">{{ players|length }}</span>/3
+        </span>
+    </li>
 
-    <!-- The HTML file had a context object passed into it called
-    players, containing an array of each player within the specific lobby -->
+    <li class="list-group-item">
+        <div class="progress" role="progressbar" aria-label="Striped animated example"
+        aria-valuenow="{{ players|length }}" aria-valuemin="0" aria-valuemax="3">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="timer"></div></div>    
+    </li>
 
-    <!-- Lets loop through the array of players -->
+    </div>
     {% for player in players %}
 
-    <!-- The player field [their username] of the player is displayed in a <span> -->
-    <div class="list-group-item player list-group-item-action d-flex justify-content-between align-items-center py-2" id="player-{{player.player}}"><span id="player-name-{{player.player}}">{{ player.player }}</span></div>
+    <div class="list-group-item player list-group-item-action d-flex justify-content-between align-items-center py-2"
+        id="player-{{player.player}}"><span id="player-name-{{player.player}}">{{ player.player }}</span></div>
     {% endfor %}
-</div>
+    </div>

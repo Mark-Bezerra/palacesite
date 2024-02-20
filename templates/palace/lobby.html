@@ -58,10 +58,12 @@
         //If it is an update about a new player joining, the sidebar is updated
         if (data["update"] === "users") {
             refreshPlayers();
+        } else if (data["update"] === "beginning") {
+            gameBegin();
         } else if (data["update"] === "role") {
             revealRole(data["player"], data["role"]);
         } else if (data["update"] === "disconnected") {
-            playerStatusUpdate(data["player"], "disconnect");
+            playerStatusUpdate(data["player"], "disconnected");
         } else if (data["update"] === "reconnected") {
             playerStatusUpdate(data["player"], "reconnected");
         } else {
@@ -93,17 +95,32 @@
     Game Logic (Global)
     */
 
+    function gameBegin() {
+        document.querySelector('#chat-log').value += ('Room: Game beginning!\n');
+
+        $("#timer").width("100%");
+        $("#timer").animate({width: "0%"}, {duration: 5000}, {easing: "swing"});
+    }
+
+
     function refreshPlayers() {
         var sidebar = $("#lobby-sidebar");
         $.get("{% url 'palace:players' lobby_name=lobby_name%}", function (data) {
             sidebar.html(data);
+            $("#timer").width(((($("#player-count").text() / 3) * 100)).toString() + "%");
         });
+
+        console.log(($("#player-count").text() / 3) * 100);
     }
 
     function playerStatusUpdate(player, status){
-        var playerDom = $("#player-"+name);
+        var playerDom = $("#player-"+player);
+        var lobbyCountDom = $("#player-count")
+        console.log("ran function");
 
         if(status === "disconnected"){
+            console.log("ran dis");
+
             playerDom.append("<span class='badge text-bg-secondary' id='" + player +"-disconnected'>Disconnected</span>");
         }
 
@@ -132,8 +149,6 @@
     }
 
     $(document).ready(function () {
-        console.log("ref");
-
         refreshPlayers()
         //reloading lobbyplayers template
     });
