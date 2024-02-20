@@ -1,0 +1,14 @@
+<!-- Here is the HTML for the player-list sidebar -->
+<ul class="vstack list-group list-group-flush" id="lobbyplayers">
+    <li class="list-group-item player">Players:</li>
+
+    <!-- The HTML file had a context object passed into it called
+    players, containing an array of each player within the specific lobby -->
+
+    <!-- Lets loop through the array of players -->
+    {% for player in players %}
+
+    <!-- The player field [their username] of the player is displayed in a <span> -->
+    <div class="list-group-item player list-group-item-action d-flex justify-content-between align-items-center py-2" id="player-{{player.player}}"><span id="player-name-{{player.player}}">{{ player.player }}</span></div>
+    {% endfor %}
+</div>

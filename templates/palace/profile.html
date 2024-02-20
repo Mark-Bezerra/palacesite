@@ -1,0 +1,15 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block content %}
+<div class="profile">
+    <h3 class="text-center">{{ player.user }}'s Profile</h3>
+    <div class="card specific-w-300 mw-100 mx-auto">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">{{ player.user }}'s wins: {{ player.wins }}</li>
+            <li class="list-group-item">List group item 2</li>
+            <li class="list-group-item">List group item 3</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

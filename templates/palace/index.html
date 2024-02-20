@@ -1,0 +1,38 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block content %}
+<section>
+    <h1 class="text-center title">Palace</h1>
+    <h4 class="text-center">Palace is a party game of deduction, investigation, and mystery solving.</h1>
+        <ul class="rules list-unstyled">
+            <li>
+                <h6>This is how the games go:</h6>
+
+                <ol>
+                    <li>You are dealt a card with your role</li>
+
+                    <li>If you are the <span class="badge text-bg-warning">king</span>, try to not reveal your identity,
+                        the beast is out to get you</li>
+
+                    <li>If you are one of the <span class="badge text-bg-info">guards</span>, the king's identity has
+                        been revealed to you, try to keep it secret</li>
+
+                    <li>If you are the <span class="badge text-bg-dark">beast</span>, you can attempt to pounce on the
+                        king at any time, but then you will be revealed and detained</li>
+
+                    <li>At the end of two minute cycles, all players vote to kick a player out of the palace</li>
+
+                    <li>The palace team wins if they kick the beast out of the palace</li>
+
+                    <li>The beast wins if they have defeated the king</li>
+                </ol>
+            </li>
+        </ul>
+
+</section>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}

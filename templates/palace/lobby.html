@@ -1,0 +1,148 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}
+<title>Palace inGame</title>
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center title">Lobby {{ lobby_name }}</h1>
+<div class="container-fluid">
+    <div class="row">
+        <!---The chat box-->
+        <div class="col">
+            <textarea readonly id="chat-log" class="form-control" cols="100" rows="20"></textarea><br>
+            <div class="input-group mb-3">
+                <input id="chat-message-input" class="form-control" type="text" aria-label="Username" size="100"><br>
+                <input id="chat-message-submit" class="btn btn-primary" type="button" value="Send">
+            </div>
+        </div>
+        <!---The player list box-->
+        <div class="col-auto">
+            <div class="specific-w-300 mw-100 mx-auto card" id="lobby-sidebar">
+            </div>
+        </div>
+    </div>
+</div>
+{{ lobby_name|json_script:"lobby-name" }}
+{% endblock %}
+
+{% block script %}
+<script>
+    const roomName = JSON.parse(document.getElementById('lobby-name').textContent);
+
+    const player = {
+        role: "",
+        voting: "",
+        acting: "",
+        out: false,
+    };
+
+    /*
+    Websocket Code
+    */
+
+    //A new WebSocket is made, a continual connection between user and server
+    const chatSocket = new WebSocket(
+        'ws://'
+        + window.location.host
+        + '/ws/palace/'
+        + roomName
+        + '/'
+    );
+
+    //Here the DOM is updated one way or another based on what the chatSocket receives
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+
+        //If it is an update about a new player joining, the sidebar is updated
+        if (data["update"] === "users") {
+            refreshPlayers();
+        } else if (data["update"] === "role") {
+            revealRole(data["player"], data["role"]);
+        } else if (data["update"] === "disconnected") {
+            playerStatusUpdate(data["player"], "disconnect");
+        } else if (data["update"] === "reconnected") {
+            playerStatusUpdate(data["player"], "reconnected");
+        } else {
+            document.querySelector('#chat-log').value += (data.username + ': ' + data.message + '\n');
+        }
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function (e) {
+        if (e.keyCode === 13) { // enter, return
+            document.querySelector('#chat-message-submit').click();
+        }
+    };
+
+    document.querySelector('#chat-message-submit').onclick = function (e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+        chatSocket.send(JSON.stringify({
+            'message': message
+        }));
+        messageInputDom.value = '';
+    };
+
+    /*
+    Game Logic (Global)
+    */
+
+    function refreshPlayers() {
+        var sidebar = $("#lobby-sidebar");
+        $.get("{% url 'palace:players' lobby_name=lobby_name%}", function (data) {
+            sidebar.html(data);
+        });
+    }
+
+    function playerStatusUpdate(player, status){
+        var playerDom = $("#player-"+name);
+
+        if(status === "disconnected"){
+            playerDom.append("<span class='badge text-bg-secondary' id='" + player +"-disconnected'>Disconnected</span>");
+        }
+
+        if(status === "reconnected"){
+            $("#" + player + "-disconnected").remove();
+        }
+    }
+
+    function revealRole(player, role){
+        let name = player;
+        let char = role;
+        
+        var playerDom = $("#player-"+name);
+
+        switch(char){
+            case 'King':
+                playerDom.append("<span class='badge text-bg-warning'>King</span>");
+                break;
+            case 'Beast':
+                playerDom.append("<span class='badge text-bg-dark'>Beast</span>");
+                break;
+            case 'Guard':
+                playerDom.append("<span class='badge text-bg-info'>Guard</span>");
+                break
+        }
+    }
+
+    $(document).ready(function () {
+        console.log("ref");
+
+        refreshPlayers()
+        //reloading lobbyplayers template
+    });
+
+    /*
+    Game Logic (Character Specific)
+    */
+
+
+
+</script>
+{% endblock %}
