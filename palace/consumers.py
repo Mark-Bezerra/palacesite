@@ -13,6 +13,9 @@ import random
 from time import sleep
 
 
+# WebSocket 'consumers' consume front end WebSockets
+# for the purpose of coding the backend response to
+# connections being opened and messages being received
 class LobbyConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.lobby_name = self.scope["url_route"]["kwargs"]["lobby_name"]
@@ -36,6 +39,8 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             },
         )
 
+    # This runs when a websocket connection is disconnected
+    # by page being closed or connectivity issue
     async def disconnect(self, close_code):
         await self.channel_layer.send(
             "moderator",
@@ -48,7 +53,13 @@ class LobbyConsumer(AsyncWebsocketConsumer):
 
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # player removal from lobby in database
+    # Remove a game lobby from the game lobbies database
+    # Which is used only for active games
+    @database_sync_to_async
+    def delete_lobby(self):
+        models.Lobby.objects.get(lobby_name=self.lobby_name).delete()
+
+    # Set a player's status to being out of any lobby
     @database_sync_to_async
     def remove_from_lobby(self):
         self.user.player.ingame = None
@@ -70,6 +81,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             },
         )
 
+    # Channel Layer function, [sends] by the "update" function
     async def refresh_lobby(self, event):
         player_list = await self.get_players()
         message = ", ".join(player_list)
@@ -194,6 +206,11 @@ class Player:
         self.channel = channel
 
 
+# This 'worker' runs on a redis server and acts as an
+# invisible spectator. Its purpose is to keep track of
+# 'game-state', that is, what each player's role is,
+# and the actions they are performing. If not for this,
+# the players would not be able to keep secrets.
 class GameConsumer(SyncConsumer):
     players = {}
     roles = ["King", "Guard", "Beast"]
@@ -201,6 +218,7 @@ class GameConsumer(SyncConsumer):
     capacity = 3
     player_count = 0
     random.shuffle(roles)
+    lobby_name = ""
     group = ""
 
     def connect(self, event):
@@ -208,7 +226,8 @@ class GameConsumer(SyncConsumer):
 
         # Lobby connection
         if self.lobby:
-            if self.group == "":
+            if self.player_count == 0:
+                self.lobby_name = event["id"]
                 self.group = "palace_%s" % event["id"]
 
             self.players[username] = Player(event["player_channel"])
@@ -293,6 +312,22 @@ class GameConsumer(SyncConsumer):
                 },
             )
 
+            self.player_count -= 1
+
+        if self.player_count == 0:
+            self.message(
+                {
+                    "type": "delete_lobby",
+                    "player_channel": event["player_channel"],
+                },
+            )
+            models.Lobby.objects.get(lobby_name=self.lobby_name).delete()
+            self.lobby = True
+            self.roles = ["King", "Guard", "Beast"]
+            random.shuffle(self.roles)
+            self.players = {}
+
+    # The lobby has filled, the game begins.
     def init_game(self, event):
         character = event["player"]
         role = self.roles.pop()
@@ -349,6 +384,34 @@ class GameConsumer(SyncConsumer):
                         "username": "Room",
                     },
                 )
+
+        sleep(5)
+        self.cycle()
+
+    def action(self, event):
+        actor = event["player"]
+        action = event["action"]
+        target = event["target"]
+
+    def cycle(self):
+        print("hi")
+        self.group_message(
+            {
+                "type": "update",
+                "update": "cycle",
+                "message": "",
+            },
+        )
+
+        sleep(15)
+
+        self.group_message(
+            {
+                "type": "chat_message",
+                "username": "Room",
+                "message": "Cycle finished!",
+            },
+        )
 
     def message(self, event):
         async_to_sync(self.channel_layer.send)(

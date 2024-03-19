@@ -18,8 +18,37 @@
             </div>
         </div>
         <!---The player list box-->
-        <div class="col-auto">
-            <div class="specific-w-300 mw-100 mx-auto card" id="lobby-sidebar">
+        <div class="col-auto d-flex flex-column justify-content-start">
+            <div class="specific-w-300 mw-100 mx-auto card">
+                <ul class="list-group list-group-flush" id="lobby-items">
+                    <li class="list-group-item player d-flex justify-content-between align-items-center py-2">
+                        <span>Players:</span>
+                        <span id="capacity">
+                            <span id="player-count">{{ players|length }}</span>/3
+                        </span>
+                    </li>
+
+                    <li class="list-group-item">
+                        <div class="progress" role="progressbar" aria-label="Striped animated example"
+                            aria-valuenow="{{ players|length }}" aria-valuemin="0" aria-valuemax="3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="timer"
+                                style="width: {% widthratio players|length 1 33.3 %}%;"></div>
+                        </div>
+                    </li>
+
+                </ul>
+            </div>
+
+            <div class="specific-w-300 mw-100 mx-auto card mt-3">
+                <ul class="list-group list-group-flush" id="lobby-players">
+                    {% for player in players %}
+
+                    <li class="list-group-item player list-group-item-action d-flex justify-content-between align-items-center py-2"
+                        id="player-{{player.player}}"><span id="player-name-{{player.player}}">{{ player.player}}</span>
+                    </li>
+
+                    {% endfor %}
+                </ul>
             </div>
         </div>
     </div>
@@ -30,13 +59,6 @@
 {% block script %}
 <script>
     const roomName = JSON.parse(document.getElementById('lobby-name').textContent);
-
-    const player = {
-        role: "",
-        voting: "",
-        acting: "",
-        out: false,
-    };
 
     /*
     Websocket Code
@@ -62,6 +84,8 @@
             gameBegin();
         } else if (data["update"] === "role") {
             revealRole(data["player"], data["role"]);
+        } else if (data["update"] === "cycle") {
+            newCycle();
         } else if (data["update"] === "disconnected") {
             playerStatusUpdate(data["player"], "disconnected");
         } else if (data["update"] === "reconnected") {
@@ -99,43 +123,49 @@
         document.querySelector('#chat-log').value += ('Room: Game beginning!\n');
 
         $("#timer").width("100%");
-        $("#timer").animate({width: "0%"}, {duration: 5000}, {easing: "swing"});
+        $("#timer").animate({ width: "0%" }, 5000, "linear", function(){refreshTimer()});
     }
 
+    function newCycle() {
+        document.querySelector('#chat-log').value += ('Room: Discuss and cast votes!\n');
+
+        $("#timer").animate({ width: "0%" }, { duration: 15000 }, { easing: "swing" });
+    }
+
+    function refreshTimer() {
+        $("#timer").animate({ width: "100%" }, 400, "swing");
+    }
 
     function refreshPlayers() {
-        var sidebar = $("#lobby-sidebar");
-        $.get("{% url 'palace:players' lobby_name=lobby_name%}", function (data) {
-            sidebar.html(data);
-            $("#timer").width(((($("#player-count").text() / 3) * 100)).toString() + "%");
-        });
+        $("#lobby-players").load(location.href + " #lobby-players");
+        $("#lobby-items").load(location.href + " #lobby-items");
 
         console.log(($("#player-count").text() / 3) * 100);
     }
 
-    function playerStatusUpdate(player, status){
-        var playerDom = $("#player-"+player);
+    function playerStatusUpdate(player, status) {
+        var playerDom = $("#player-" + player);
         var lobbyCountDom = $("#player-count")
         console.log("ran function");
 
-        if(status === "disconnected"){
+        if (status === "disconnected") {
             console.log("ran dis");
 
-            playerDom.append("<span class='badge text-bg-secondary' id='" + player +"-disconnected'>Disconnected</span>");
+            playerDom.append("<span class='badge text-bg-secondary' id='" + player + "-disconnected'>Disconnected</span>");
         }
 
-        if(status === "reconnected"){
+        if (status === "reconnected") {
             $("#" + player + "-disconnected").remove();
         }
     }
 
-    function revealRole(player, role){
+    function revealRole(player, role) {
         let name = player;
         let char = role;
-        
-        var playerDom = $("#player-"+name);
 
-        switch(char){
+        var playerDom = $("#player-" + name);
+
+        switch (char) {
             case 'King':
                 playerDom.append("<span class='badge text-bg-warning'>King</span>");
                 break;
@@ -156,7 +186,6 @@
     /*
     Game Logic (Character Specific)
     */
-
 
 
 </script>
