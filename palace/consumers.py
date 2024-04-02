@@ -347,6 +347,15 @@ class GameConsumer(SyncConsumer):
             {
                 "type": "game_update",
                 "player_channel": event["player_channel"],
+                "update": "self",
+                "player": f"{character}",
+            },
+        )
+
+        self.message(
+            {
+                "type": "game_update",
+                "player_channel": event["player_channel"],
                 "update": "role",
                 "player": f"{character}",
                 "role": f"{role}",
@@ -403,7 +412,7 @@ class GameConsumer(SyncConsumer):
             },
         )
 
-        sleep(15)
+        sleep(30)
 
         self.group_message(
             {

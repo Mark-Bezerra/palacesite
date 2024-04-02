@@ -21,7 +21,7 @@
         <div class="col-auto d-flex flex-column justify-content-start">
             <div class="specific-w-300 mw-100 mx-auto card">
                 <ul class="list-group list-group-flush" id="lobby-items">
-                    <li class="list-group-item player d-flex justify-content-between align-items-center py-2">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
                         <span>Players:</span>
                         <span id="capacity">
                             <span id="player-count">{{ players|length }}</span>/3
@@ -59,6 +59,8 @@
 {% block script %}
 <script>
     const roomName = JSON.parse(document.getElementById('lobby-name').textContent);
+    var selfplayer;
+    var selfbeast = false;
 
     /*
     Websocket Code
@@ -84,6 +86,9 @@
             gameBegin();
         } else if (data["update"] === "role") {
             revealRole(data["player"], data["role"]);
+        } else if (data["update"] === "self") {
+            selfplayer = data["player"];
+            selfBadge(data["player"]);
         } else if (data["update"] === "cycle") {
             newCycle();
         } else if (data["update"] === "disconnected") {
@@ -123,34 +128,56 @@
         document.querySelector('#chat-log').value += ('Room: Game beginning!\n');
 
         $("#timer").width("100%");
-        $("#timer").animate({ width: "0%" }, 5000, "linear", function(){refreshTimer()});
+        $("#timer").animate({ width: "0%" }, 5000, "linear", function () {
+            $("#timer").animate({ width: "100%" }, 400, "swing");
+        });
     }
 
     function newCycle() {
         document.querySelector('#chat-log').value += ('Room: Discuss and cast votes!\n');
 
-        $("#timer").animate({ width: "0%" }, { duration: 15000 }, { easing: "swing" });
+        var x = 1;
+        $(".player").each(function () {
+            console.log(this.id);
+            console.log("player-" + selfplayer);
+            if (this.id != "player-" + selfplayer) {
+                $(this).append('<input type="radio" name="radio-group-vote" class="btn-check cycle-action" id="voter-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="voter-' + x + '">Vote</label>');
+                x++;
+            }
+        });
+
+        if (selfbeast) {
+            var x = 1;
+            $(".player").each(function () {
+                if (this.id != "player-" + selfplayer) {
+                    $(this).append('<input type="radio" name="radio-group-jump" class="btn-check cycle-action" id="jump-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="jump-' + x + '">Jump</label>');
+                    x++;
+                }
+            });
+        }
+
+        $("#timer").animate({ width: "0%" }, 30000, "swing", function () {
+            $("#timer").animate({ width: "100%" }, 400, "swing");
+            endCycle();
+        });
     }
 
-    function refreshTimer() {
-        $("#timer").animate({ width: "100%" }, 400, "swing");
+    function endCycle() {
+        $(".cycle-action").each(function () {
+            $(this).remove();
+        });
     }
 
     function refreshPlayers() {
         $("#lobby-players").load(location.href + " #lobby-players");
         $("#lobby-items").load(location.href + " #lobby-items");
-
-        console.log(($("#player-count").text() / 3) * 100);
     }
 
     function playerStatusUpdate(player, status) {
         var playerDom = $("#player-" + player);
         var lobbyCountDom = $("#player-count")
-        console.log("ran function");
 
         if (status === "disconnected") {
-            console.log("ran dis");
-
             playerDom.append("<span class='badge text-bg-secondary' id='" + player + "-disconnected'>Disconnected</span>");
         }
 
@@ -171,11 +198,20 @@
                 break;
             case 'Beast':
                 playerDom.append("<span class='badge text-bg-dark'>Beast</span>");
+                if (selfplayer === name) selfbeast = true;
                 break;
             case 'Guard':
                 playerDom.append("<span class='badge text-bg-info'>Guard</span>");
                 break
         }
+    }
+
+    function selfBadge(player) {
+        let name = player;
+
+        var playerDom = $("#player-name-" + name);
+
+        playerDom.append(" <span class='badge'>You</span>");
     }
 
     $(document).ready(function () {
@@ -186,7 +222,6 @@
     /*
     Game Logic (Character Specific)
     */
-
 
 </script>
 {% endblock %}
