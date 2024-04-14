@@ -141,7 +141,7 @@
             console.log(this.id);
             console.log("player-" + selfplayer);
             if (this.id != "player-" + selfplayer) {
-                $(this).append('<input type="radio" name="radio-group-vote" class="btn-check cycle-action" id="voter-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="voter-' + x + '">Vote</label>');
+                $(this).append('<input type="radio" name="radio-group-vote" value="' + this.id.substring(7) + '" class="btn-check cycle-action" id="voter-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="voter-' + x + '">Vote</label>');
                 x++;
             }
         });
@@ -150,19 +150,25 @@
             var x = 1;
             $(".player").each(function () {
                 if (this.id != "player-" + selfplayer) {
-                    $(this).append('<input type="radio" name="radio-group-jump" class="btn-check cycle-action" id="jump-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="jump-' + x + '">Jump</label>');
+                    $(this).append('<input type="radio" name="radio-group-jump" value="' + this.id.substring(7) + '" class="btn-check cycle-action" id="jump-' + x + '" autocomplete="off"> <label class="btn btn-outline-primary cycle-action" for="jump-' + x + '">Jump</label>');
                     x++;
                 }
             });
         }
 
-        $("#timer").animate({ width: "0%" }, 30000, "swing", function () {
+        $("#timer").animate({ width: "0%" }, 10000, "swing", function () {
             $("#timer").animate({ width: "100%" }, 400, "swing");
             endCycle();
         });
     }
 
     function endCycle() {
+        const message = $('input[name=radio-group-vote]:checked').val();
+        console.log(message);
+        chatSocket.send(JSON.stringify({
+            'message': ">>" + message
+        }));
+
         $(".cycle-action").each(function () {
             $(this).remove();
         });

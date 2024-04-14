@@ -71,15 +71,23 @@ class LobbyConsumer(AsyncWebsocketConsumer):
         message = text_data_json["message"]
         username = self.scope["user"].username
 
-        # Send message to room group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "chat_message",
-                "message": message,
-                "username": username,
-            },
-        )
+        if message[:2] == ">>":
+            await self.channel_layer.send(
+                "moderator",
+                {
+                    "type": "vote",
+                    "vote": message[2:],
+                },
+            )
+        else:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_message",
+                    "message": message,
+                    "username": username,
+                },
+            )
 
     # Channel Layer function, [sends] by the "update" function
     async def refresh_lobby(self, event):
@@ -201,6 +209,7 @@ class Player:
     spectator = False
     role = ""
     channel = ""
+    votes = 0
 
     def __init__(self, channel):
         self.channel = channel
@@ -397,10 +406,27 @@ class GameConsumer(SyncConsumer):
         sleep(5)
         self.cycle()
 
-    def action(self, event):
-        actor = event["player"]
-        action = event["action"]
-        target = event["target"]
+    def vote(self, event):
+        vote = event["vote"]
+        self.players[vote].votes += 1
+        print("1 vote for " + vote + ". Total: " + str(self.players[vote].votes))
+
+    def tally(self):
+        votes = 0
+        voted = ""
+
+        for i, name in enumerate(self.players):
+            if self.players[name].votes > votes:
+                votes = self.players[i].votes
+                voted = name
+
+        self.group_message(
+            {
+                "type": "chat_message",
+                "username": "Room",
+                "message": voted + " has been voted out!",
+            },
+        )
 
     def cycle(self):
         print("hi")
@@ -412,15 +438,16 @@ class GameConsumer(SyncConsumer):
             },
         )
 
-        sleep(30)
+        sleep(10)
 
         self.group_message(
             {
                 "type": "chat_message",
                 "username": "Room",
-                "message": "Cycle finished!",
+                "message": "Cycle finished! Counting votes.",
             },
         )
+
 
     def message(self, event):
         async_to_sync(self.channel_layer.send)(
