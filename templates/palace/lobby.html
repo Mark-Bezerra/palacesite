@@ -158,15 +158,25 @@
 
         $("#timer").animate({ width: "0%" }, 10000, "swing", function () {
             $("#timer").animate({ width: "100%" }, 400, "swing");
-            endCycle();
         });
+
+        setTimeout(() => {
+            endCycle();
+         }, 10000);
     }
 
     function endCycle() {
         const message = $('input[name=radio-group-vote]:checked').val();
-        console.log(message);
+        const messagejump = $('input[name=radio-group-jump]:checked').val();
+
+        if (selfbeast && !!messagejump){
+            chatSocket.send(JSON.stringify({
+            'message': "j>" + messagejump
+        }));
+        }
+
         chatSocket.send(JSON.stringify({
-            'message': ">>" + message
+            'message': "v>" + message
         }));
 
         $(".cycle-action").each(function () {
