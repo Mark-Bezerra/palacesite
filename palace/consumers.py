@@ -223,10 +223,10 @@ class Player:
 # the players would not be able to keep secrets.
 class GameConsumer(SyncConsumer):
     players = {}
-    roles = ["King", "Guard", "Beast"]
+    roles = ["King", "Guard", "Guard", "Guard", "Guard", "Beast"]
     lobby = True
     game_over = False
-    capacity = 3
+    capacity = 6
     player_count = 0
     votes = 0
     random.shuffle(roles)
@@ -335,7 +335,7 @@ class GameConsumer(SyncConsumer):
             )
             models.Lobby.objects.get(lobby_name=self.lobby_name).delete()
             self.lobby = True
-            self.roles = ["King", "Guard", "Beast"]
+            self.roles = ["King", "Guard", "Guard", "Guard", "Guard", "Beast"]
             random.shuffle(self.roles)
             self.players = {}
             self.votes = 0
@@ -414,8 +414,8 @@ class GameConsumer(SyncConsumer):
     def demand(self, event):
         demand = event["demand"]
         msg = event["message"]
-        
-        if demand == "v": 
+
+        if demand == "v":
             self.vote(msg)
             return None
         elif demand == "j":
@@ -434,15 +434,32 @@ class GameConsumer(SyncConsumer):
 
     def jump(self, player):
         jumped = player
+        role = self.players[jumped].role
 
         self.group_message(
             {
                 "type": "chat_message",
                 "username": "Room",
-                "message": "The " + self.players[jumped].role +
-                " " + jumped + " has been jumped on! Game over.",
+                "message": "The " + role + " " + jumped + " has been jumped on!",
             },
         )
+
+        if role == "King":
+            self.group_message(
+                {
+                    "type": "chat_message",
+                    "username": "Room",
+                    "message": "The beast wins!",
+                },
+            )
+        else:
+            self.group_message(
+                {
+                    "type": "chat_message",
+                    "username": "Room",
+                    "message": "The palace team wins!",
+                },
+            )
 
         self.game_over = True
 
@@ -452,7 +469,7 @@ class GameConsumer(SyncConsumer):
 
         if self.game_over:
             return None
-        
+
         for i, name in enumerate(self.players):
             if self.players[name].votes > votes:
                 votes = self.players[name].votes
@@ -462,11 +479,21 @@ class GameConsumer(SyncConsumer):
             {
                 "type": "chat_message",
                 "username": "Room",
-                "message": voted + " has been voted out!" +
-                " He was " + self.players[voted].role,
+                "message": voted
+                + " has been voted out!"
+                + " He was "
+                + self.players[voted].role,
             },
         )
-        
+
+        self.group_message(
+                        {
+                            "type": "game_update",
+                            "update": "out",
+                            "player": voted,
+                        },
+                    )
+
         self.group_message(
             {
                 "type": "chat_message",
@@ -496,7 +523,7 @@ class GameConsumer(SyncConsumer):
             },
         )
 
-        sleep(10)
+        sleep(50)
 
         self.group_message(
             {

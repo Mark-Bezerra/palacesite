@@ -24,15 +24,15 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center py-2">
                         <span>Players:</span>
                         <span id="capacity">
-                            <span id="player-count">{{ players|length }}</span>/3
+                            <span id="player-count">{{ players|length }}</span>/6
                         </span>
                     </li>
 
                     <li class="list-group-item">
                         <div class="progress" role="progressbar" aria-label="Striped animated example"
-                            aria-valuenow="{{ players|length }}" aria-valuemin="0" aria-valuemax="3">
+                            aria-valuenow="{{ players|length }}" aria-valuemin="0" aria-valuemax="6">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="timer"
-                                style="width: {% widthratio players|length 1 33.3 %}%;"></div>
+                                style="width: {% widthratio players|length 1 16.66 %}%;"></div>
                         </div>
                     </li>
 
@@ -91,7 +91,9 @@
             selfBadge(data["player"]);
         } else if (data["update"] === "cycle") {
             newCycle();
-        } else if (data["update"] === "disconnected") {
+        }  else if (data["update"] === "out") {
+            playerStatusUpdate(data["player"], "out");
+        }  else if (data["update"] === "disconnected") {
             playerStatusUpdate(data["player"], "disconnected");
         } else if (data["update"] === "reconnected") {
             playerStatusUpdate(data["player"], "reconnected");
@@ -156,13 +158,13 @@
             });
         }
 
-        $("#timer").animate({ width: "0%" }, 10000, "swing", function () {
+        $("#timer").animate({ width: "0%" }, 50000, "swing", function () {
             $("#timer").animate({ width: "100%" }, 400, "swing");
         });
 
         setTimeout(() => {
             endCycle();
-         }, 10000);
+         }, 50000);
     }
 
     function endCycle() {
@@ -199,6 +201,10 @@
 
         if (status === "reconnected") {
             $("#" + player + "-disconnected").remove();
+        }
+
+        if (status === "out") {
+            playerDom.append("<span class='badge text-bg-danger' id='" + player + "-out'>Out</span>");
         }
     }
 
