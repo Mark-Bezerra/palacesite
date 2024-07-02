@@ -1,0 +1,27 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block content %}
+<section>
+    <h1 class="text-center title">Lobbies</h1>
+
+    <div class="specific-w-300 mw-100 mx-auto card mt-3">
+        <ul class="list-group list-group-flush" id="games">
+            {% for lobby in lobbies %}
+            <li
+                class="list-group-item player list-group-item-action d-flex justify-content-between align-items-center py-2">
+                <span>
+                    <a href="{% url 'palace:lobby' lobby_name=lobby.lobby_name %}">
+                        {{ lobby.name }}
+                    </a>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}

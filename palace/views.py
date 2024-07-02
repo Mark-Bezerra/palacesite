@@ -1,3 +1,4 @@
+from typing import Any
 from django.shortcuts import render
 from django.views import generic
 from django.shortcuts import redirect
@@ -5,11 +6,19 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 
-from .models import Player, Lobby
+from .models import Player, Game
 
 
 class IndexView(generic.TemplateView):
     template_name = "palace/index.html"
+
+class GameIndexView(generic.TemplateView):
+    template_name = "palace/game_index.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(GameIndexView, self).get_context_data(**kwargs)
+        context['lobbies'] = Game.objects.all()
+        return context
 
 
 @login_required
@@ -25,15 +34,10 @@ class PlayerView(generic.DetailView):
     model = Player
     template_name = "palace/profile.html"
 
-
-def LobbyZed(request):
-    return redirect("../lobby/0")
-
-
 @login_required
 def LobbyView(request, lobby_name):
     # User enters a lobby. If not in the database already, it is created
-    lobby, created = Lobby.objects.get_or_create(lobby_name=lobby_name)
+    lobby, created = Game.objects.get_or_create(lobby_name=lobby_name)
 
     # But maybe the user is already in a game... lets check
     # [Checking which specific user made this HTTP request
@@ -59,7 +63,7 @@ def LobbyView(request, lobby_name):
 
 
 def LobbyPlayers(request, lobby_name):
-    lobby = Lobby.objects.get(lobby_name=lobby_name)
+    lobby = Game.objects.get(lobby_name=lobby_name)
 
     return render(
         request,

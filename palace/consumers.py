@@ -57,7 +57,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
     # Which is used only for active games
     @database_sync_to_async
     def delete_lobby(self):
-        models.Lobby.objects.get(lobby_name=self.lobby_name).delete()
+        models.Game.objects.get(lobby_name=self.lobby_name).delete()
 
     # Set a player's status to being out of any lobby
     @database_sync_to_async
@@ -105,10 +105,10 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             },
         )
 
-    # Make a string player_list by query to Lobby objects
+    # Make a string player_list by query to Game objects
     @database_sync_to_async
     def get_players(self):
-        lobby = models.Lobby.objects.get(lobby_name=self.lobby_name)
+        lobby = models.Game.objects.get(lobby_name=self.lobby_name)
         player_list = []
 
         # Players have a foreign key of a joined lobby
@@ -121,10 +121,10 @@ class LobbyConsumer(AsyncWebsocketConsumer):
     def get_username(self):
         return self.user.player.player
 
-    # Make an integer player_count by query to Lobby objects
+    # Make an integer player_count by query to Game objects
     @database_sync_to_async
     def get_player_count(self):
-        lobby = models.Lobby.objects.get(lobby_name=self.lobby_name)
+        lobby = models.Game.objects.get(lobby_name=self.lobby_name)
         self.user.player.save()
         player_count = 0
 
@@ -236,7 +236,7 @@ class GameConsumer(SyncConsumer):
     def connect(self, event):
         username = event["username"]
 
-        # Lobby connection
+        # Game connection
         if self.lobby:
             if self.player_count == 0:
                 self.lobby_name = event["id"]
@@ -296,7 +296,7 @@ class GameConsumer(SyncConsumer):
         username = event["username"]
         player_model = models.Player.objects.get(player=username)
 
-        # Lobby Disconnection
+        # Game Disconnection
         if self.lobby:
             if username in self.players:
                 del self.players[username]
@@ -333,7 +333,7 @@ class GameConsumer(SyncConsumer):
                     "player_channel": event["player_channel"],
                 },
             )
-            models.Lobby.objects.get(lobby_name=self.lobby_name).delete()
+            models.Game.objects.get(lobby_name=self.lobby_name).delete()
             self.lobby = True
             self.roles = ["King", "Guard", "Guard", "Guard", "Guard", "Beast"]
             random.shuffle(self.roles)
