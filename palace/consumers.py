@@ -215,6 +215,20 @@ class Player:
     def __init__(self, channel):
         self.channel = channel
 
+class Game:
+    players = {}
+    roles = ["King", "Guard", "Guard", "Guard", "Guard", "Beast"]
+    lobby = True
+    game_over = False
+    capacity = 6
+    player_count = 0
+    votes = 0
+    group = ""
+
+    def __init__(self, lobby_name):
+        self.group = "palace_%s" % lobby_name
+        random.shuffle(self.roles)
+
 
 # This 'worker' runs on a redis server and acts as an
 # invisible spectator. Its purpose is to keep track of
