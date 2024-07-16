@@ -42,3 +42,8 @@ a {
 .progress .progress-bar {
   transition: unset;
 }
+
+#chat-log{
+  height:400px;
+  width:800px;
+}

@@ -7,7 +7,6 @@ CHAT_ZONES = (
     ("private", "PRIVATE"),
 )
 
-
 # The player model
 class Player(models.Model):
     # Each player is connected to one of the 'user' Django authentication models
@@ -25,8 +24,9 @@ class Player(models.Model):
         related_name="players",
         default="",
         blank=True,
-        null=False,
+        null=True,
     )
+    
     player = models.CharField(max_length=16, default="")
     wins = models.IntegerField()
 
@@ -42,8 +42,7 @@ class Game(models.Model):
     name = models.TextField()
     capacity = models.SmallIntegerField(default=6)
 
-    players = models.ManyToManyField(Player)
-    winners = models.ManyToManyField(Player)
+    winners = models.ManyToManyField(Player, related_name="winners")
 
     # The name that will appear in the address bar
     lobby_name = models.SlugField(unique=True)

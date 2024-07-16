@@ -61,6 +61,8 @@ def LobbyView(request, lobby_name):
         },
     )
 
+def LobbyZed(request):
+    return redirect("../lobby/0")
 
 def LobbyPlayers(request, lobby_name):
     lobby = Game.objects.get(lobby_name=lobby_name)

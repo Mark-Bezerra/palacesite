@@ -11,7 +11,7 @@
     <div class="row">
         <!---The chat box-->
         <div class="col">
-            <textarea readonly id="chat-log" class="form-control" cols="100" rows="20"></textarea><br>
+            <div readonly id="chat-log" class="form-control"></div><br>
             <div class="input-group mb-3">
                 <input id="chat-message-input" class="form-control" type="text" aria-label="Username" size="100"><br>
                 <input id="chat-message-submit" class="btn btn-primary" type="button" value="Send">
@@ -98,7 +98,9 @@
         } else if (data["update"] === "reconnected") {
             playerStatusUpdate(data["player"], "reconnected");
         } else {
-            document.querySelector('#chat-log').value += (data.username + ': ' + data.message + '\n');
+            txt = document.createElement("p");
+            txt.textContent = data.username + ': ' + data.message;
+            document.querySelector('#chat-log').appendChild(txt);
         }
     };
 
@@ -127,7 +129,11 @@
     */
 
     function gameBegin() {
-        document.querySelector('#chat-log').value += ('Room: Game beginning!\n');
+        txt = document.createElement("p");
+        txt.textContent = 'Room: Game beginning!';
+        txt.className = "badge text-bg-primary"
+
+        document.querySelector('#chat-log').appendChild(txt);
 
         $("#timer").width("100%");
         $("#timer").animate({ width: "0%" }, 5000, "linear", function () {
@@ -136,7 +142,12 @@
     }
 
     function newCycle() {
-        document.querySelector('#chat-log').value += ('Room: Discuss and cast votes!\n');
+        txt = document.createElement("p");
+        txt.textContent = 'Room: Discuss and cast votes!';
+        txt.className = "badge text-bg-primary"
+
+        document.querySelector('#chat-log').appendChild(txt);
+
 
         var x = 1;
         $(".player").each(function () {

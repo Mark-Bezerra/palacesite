@@ -249,8 +249,30 @@ class GameConsumer(SyncConsumer):
 
     def connect(self, event):
         username = event["username"]
+        print(username + " joined")
 
-        # Game connection
+        if username == "mark":
+            sleep(1)
+
+            self.group_message(
+                {
+                    "type": "update",
+                    "update": "beginning",
+                    "message": "",
+                },
+            )
+
+            sleep(5)
+
+            self.lobby = False
+
+            self.group_message(
+                {
+                    "type": "assigned_roles",
+                },
+            )
+            
+        # Game connection in lobby phase
         if self.lobby:
             if self.player_count == 0:
                 self.lobby_name = event["id"]
@@ -287,10 +309,10 @@ class GameConsumer(SyncConsumer):
                     },
                 )
 
-        # Game connection
+        # Game connection of game in-progress
         else:
             if username in self.players:
-                # reconnect
+                # a player has reconnected
                 if not self.players[username].connected:
                     self.group_message(
                         {
@@ -302,13 +324,14 @@ class GameConsumer(SyncConsumer):
                     self.players[username].connected = True
 
             else:
-                # spectator
+                # a spectator has joined
                 self.players[username] = Player(event["player_channel"])
                 self.players[username].spectator = True
 
     def disconnect(self, event):
         username = event["username"]
         player_model = models.Player.objects.get(player=username)
+        print(username + " left")
 
         # Game Disconnection
         if self.lobby:
