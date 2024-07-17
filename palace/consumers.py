@@ -280,7 +280,7 @@ class GameConsumer(SyncConsumer):
             self.player_count += 1
 
             if self.player_count == self.capacity:
-
+                print("what")
                 sleep(1)
 
                 self.group_message(

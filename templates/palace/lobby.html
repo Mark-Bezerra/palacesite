@@ -51,7 +51,7 @@
     <!---The chat box-->
     <h1 class="text-center title pt-4">Lobby {{ lobby_name }}</h1>
 
-    <div readonly id="chat-log" class="form-control mx-auto w-100 h-75 mb-3 vstack gap-2">
+    <div readonly id="chat-log" class="form-control mx-auto w-100 h-75 mb-3 vstack gap-2 overflow-y-auto">
         <div></div>
     </div>
     <div class="input-group mb-3">
@@ -268,24 +268,26 @@
             case 'King':
                 playerDom.append("<span class='badge text-bg-warning'>King</span>");
 
-                txt.textContent = 'Your role is King!';
-                txt.className = "badge rounded-pill text-bg-warning w-50 mx-auto";
-
+                if (name === selfplayer) {
+                    txt.textContent = 'Your role is King!';
+                    txt.className = "badge rounded-pill text-bg-warning w-50 mx-auto";
+                }
                 break;
             case 'Beast':
                 playerDom.append("<span class='badge text-bg-dark'>Beast</span>");
-                if (selfplayer === name) selfbeast = true;
 
-                txt.textContent = 'Your role is Beast!';
-                txt.className = "badge rounded-pill text-bg-dark w-50 mx-auto";
-
+                if (selfplayer === name) {
+                    selfbeast = true;
+                    txt.textContent = 'Your role is Beast!';
+                    txt.className = "badge rounded-pill text-bg-dark w-50 mx-auto";
+                }
                 break;
             case 'Guard':
                 playerDom.append("<span class='badge text-bg-info'>Guard</span>");
-
+                if (player === selfplayer) {
                 txt.textContent = 'Your role is Guard!';
                 txt.className = "badge rounded-pill text-bg-info w-50 mx-auto";
-
+                }
                 break
         }
 
