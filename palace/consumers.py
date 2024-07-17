@@ -11,6 +11,7 @@ from . import models
 from channels.layers import get_channel_layer
 import random
 from time import sleep
+from threading import Timer
 
 
 # WebSocket 'consumers' consume front end WebSockets
@@ -78,6 +79,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
                     "type": "demand",
                     "demand": message[:1],
                     "message": message[2:],
+                    "username": username,
                 },
             )
         else:
@@ -99,9 +101,8 @@ class LobbyConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                "type": "update",
-                "update": "users",
-                "message": message,
+                "type": "game_event",
+                "event": "users",
             },
         )
 
@@ -134,65 +135,76 @@ class LobbyConsumer(AsyncWebsocketConsumer):
 
         return player_count
 
-    # Receive message from room group
+    # Below are 4 kinds of messages that can be sent to the client
+    # First is the chat_message from other players
+    # Then game_message, a broadcast from the game
+    # Then game_event, which tells the client to run a function
+    # Lastly game_event, which reveals something to one client
+
     async def chat_message(self, event):
         message = event["message"]
         username = event["username"]
 
         # Send message to WebSocket
         await self.send(
-            text_data=json.dumps({"message": message, "username": username})
+            text_data=json.dumps(
+                {"type": "chat", "message": message, "username": username}
+            )
         )
 
-    async def update(self, event):
+    async def game_message(self, event):
         message = event["message"]
-        update = event["update"]
+        theme = event["theme"]
 
         message.replace(
             self.scope["user"].username, f"{self.scope['user'].username}(you)"
         )
 
-        await self.send(text_data=json.dumps({"message": message, "update": update}))
+        await self.send(
+            text_data=json.dumps(
+                {"type": "broadcast", "message": message, "theme": theme}
+            )
+        )
 
-    async def game_update(self, event):
-        player = event["player"]
+    async def game_event(self, event):
+        game_event = event["event"]
+
+        if "message" in event:
+            message = event["message"]
+        else:
+            message = ""
+
+        if "theme" in event:
+            theme = event["theme"]
+        else:
+            theme = ""
+
+        if "player" in event:
+            player = event["player"]
+        else:
+            player = ""
+
         if "role" in event:
             role = event["role"]
         else:
             role = ""
-        update = event["update"]
 
-        await self.send(
-            text_data=json.dumps({"role": role, "player": player, "update": update})
+        message.replace(
+            self.scope["user"].username, f"{self.scope['user'].username}(you)"
         )
 
-    # Begin the game and get the game worker going...
-    """ async def begin_game(self):
-        lobby_name = self.lobby_name
-        profile = await self.get_username()
-        player_channel = self.channel_name
-
-        count = await self.get_player_count()
-        if count == 3:
-            message = "Game beginning!"
-            await self.channel_layer.group_send(
-                self.room_group_name,
+        await self.send(
+            text_data=json.dumps(
                 {
-                    "type": "chat_message",
+                    "type": "event",
+                    "event": game_event,
                     "message": message,
-                    "username": "Room",
-                },
+                    "theme": theme,
+                    "player": player,
+                    "role": role,
+                }
             )
-
-            await self.channel_layer.send(
-                "moderator",
-                {
-                    "type": "game.begin",
-                    "id": lobby_name,
-                    "player": profile,
-                    "player_channel": player_channel,
-                },
-            )"""
+        )
 
     async def assigned_roles(self, event):
         profile = await self.get_username()
@@ -214,6 +226,7 @@ class Player:
 
     def __init__(self, channel):
         self.channel = channel
+
 
 class Game:
     players = {}
@@ -251,27 +264,6 @@ class GameConsumer(SyncConsumer):
         username = event["username"]
         print(username + " joined")
 
-        if username == "mark":
-            sleep(1)
-
-            self.group_message(
-                {
-                    "type": "update",
-                    "update": "beginning",
-                    "message": "",
-                },
-            )
-
-            sleep(5)
-
-            self.lobby = False
-
-            self.group_message(
-                {
-                    "type": "assigned_roles",
-                },
-            )
-            
         # Game connection in lobby phase
         if self.lobby:
             if self.player_count == 0:
@@ -293,9 +285,10 @@ class GameConsumer(SyncConsumer):
 
                 self.group_message(
                     {
-                        "type": "update",
-                        "update": "beginning",
-                        "message": "",
+                        "type": "game_event",
+                        "event": "beginning",
+                        "message": "Game beginning!",
+                        "theme": "primary",
                     },
                 )
 
@@ -316,8 +309,8 @@ class GameConsumer(SyncConsumer):
                 if not self.players[username].connected:
                     self.group_message(
                         {
-                            "type": "game_update",
-                            "update": "reconnected",
+                            "type": "game_event",
+                            "event": "reconnected",
                             "player": username,
                         },
                     )
@@ -327,6 +320,7 @@ class GameConsumer(SyncConsumer):
                 # a spectator has joined
                 self.players[username] = Player(event["player_channel"])
                 self.players[username].spectator = True
+
 
     def disconnect(self, event):
         username = event["username"]
@@ -355,8 +349,8 @@ class GameConsumer(SyncConsumer):
 
             self.group_message(
                 {
-                    "type": "game_update",
-                    "update": "disconnected",
+                    "type": "game_event",
+                    "event": "disconnected",
                     "player": username,
                 },
             )
@@ -387,27 +381,18 @@ class GameConsumer(SyncConsumer):
 
         self.message(
             {
-                "type": "chat_message",
+                "type": "game_event",
                 "player_channel": event["player_channel"],
-                "message": f"Your role is {role}",
-                "username": "Room",
-            },
-        )
-
-        self.message(
-            {
-                "type": "game_update",
-                "player_channel": event["player_channel"],
-                "update": "self",
+                "event": "self",
                 "player": f"{character}",
             },
         )
 
         self.message(
             {
-                "type": "game_update",
+                "type": "game_event",
                 "player_channel": event["player_channel"],
-                "update": "role",
+                "event": "role",
                 "player": f"{character}",
                 "role": f"{role}",
             },
@@ -429,19 +414,19 @@ class GameConsumer(SyncConsumer):
             if player.role == "Guard":
                 self.message(
                     {
-                        "type": "game_update",
+                        "type": "game_event",
                         "player_channel": player.channel,
-                        "update": "role",
+                        "event": "role",
                         "player": f"{king}",
                         "role": "King",
                     },
                 )
                 self.message(
                     {
-                        "type": "chat_message",
+                        "type": "game_message",
                         "player_channel": player.channel,
                         "message": f"{king} is the King, guard him and keep this secret!",
-                        "username": "Room",
+                        "theme": "warning",
                     },
                 )
 
@@ -451,13 +436,26 @@ class GameConsumer(SyncConsumer):
     def demand(self, event):
         demand = event["demand"]
         msg = event["message"]
+        username = event["username"]
 
-        if demand == "v":
+        if demand == "c":
             self.vote(msg)
+            return None
+        elif demand == "v":
+            self.voted(msg, username)
             return None
         elif demand == "j":
             self.jump(msg)
             return None
+
+    def voted(self, player, voter):
+        self.group_message(
+            {
+                "type": "game_message",
+                "message": voter + " voted for " + player,
+                "theme": "success",
+            },
+        )
 
     def vote(self, player):
         voted = player
@@ -465,6 +463,7 @@ class GameConsumer(SyncConsumer):
         self.votes += 1
         print(voted + " has " + str(self.players[voted].votes) + " votes")
 
+        # If everyone has voted:
         if self.votes == self.capacity:
             self.tally()
             self.votes = 0
@@ -475,26 +474,26 @@ class GameConsumer(SyncConsumer):
 
         self.group_message(
             {
-                "type": "chat_message",
-                "username": "Room",
+                "type": "game_message",
                 "message": "The " + role + " " + jumped + " has been jumped on!",
+                "theme": "dark",
             },
         )
 
         if role == "King":
             self.group_message(
                 {
-                    "type": "chat_message",
-                    "username": "Room",
+                    "type": "game_message",
                     "message": "The beast wins!",
+                    "theme": "dark",
                 },
             )
         else:
             self.group_message(
                 {
-                    "type": "chat_message",
-                    "username": "Room",
+                    "type": "game_message",
                     "message": "The palace team wins!",
+                    "theme": "info",
                 },
             )
 
@@ -514,36 +513,28 @@ class GameConsumer(SyncConsumer):
 
         self.group_message(
             {
-                "type": "chat_message",
-                "username": "Room",
+                "type": "game_message",
                 "message": voted
                 + " has been voted out!"
                 + " He was "
                 + self.players[voted].role,
+                "theme": "danger",
             },
         )
-
-        self.group_message(
-                        {
-                            "type": "game_update",
-                            "update": "out",
-                            "player": voted,
-                        },
-                    )
-
+        # add personal role
         self.group_message(
             {
-                "type": "chat_message",
-                "username": "Room",
-                "message": "...",
+                "type": "game_event",
+                "update": "out",
+                "player": voted,
             },
         )
 
         self.group_message(
             {
-                "type": "chat_message",
-                "username": "Room",
+                "type": "game_message",
                 "message": "New cycle beginning in 5 seconds",
+                "theme": "light",
             },
         )
 
@@ -554,21 +545,26 @@ class GameConsumer(SyncConsumer):
     def cycle(self):
         self.group_message(
             {
-                "type": "update",
-                "update": "cycle",
-                "message": "",
+                "type": "game_event",
+                "event": "new_cycle",
+                "message": "Discuss and cast votes!",
+                "theme": "light",
             },
         )
 
-        sleep(50)
+        Timer(
+            50.0,
+            self.group_message,
+            [
+                {
+                    "type": "game_message",
+                    "theme": "light",
+                    "message": "Cycle finished! Counting votes.",
+                },
+            ],
+        ).start()
 
-        self.group_message(
-            {
-                "type": "chat_message",
-                "username": "Room",
-                "message": "Cycle finished! Counting votes.",
-            },
-        )
+
 
     def message(self, event):
         async_to_sync(self.channel_layer.send)(

@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
 </head>
 
-<body>
+<body class="overflow-visible">
   {% block navbar %} {% include "navbar.html" %} {% endblock %}
 
   {% if not user.is_authenticated %}

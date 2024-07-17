@@ -1,7 +1,7 @@
 .logout {
-  background: none!important;
+  background: none !important;
   border: none;
-  padding: 0!important;
+  padding: 0 !important;
   /*optional*/
   font-family: arial, sans-serif;
   /*input has OS specific font-family*/
@@ -24,18 +24,18 @@ a {
 }
 
 .material-symbols-outlined {
-  font-size:20px;
+  font-size: 20px;
 }
 
-.buttons{
+.buttons {
   vertical-align: middle;
 }
 
-#navBtn{
+#navBtn {
   cursor: pointer;
 }
 
-#modal-form{
+#modal-form {
   margin: 1% 5% 5% 5%;
 }
 
@@ -43,7 +43,11 @@ a {
   transition: unset;
 }
 
-#chat-log{
-  height:400px;
-  width:800px;
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  height: 100vh;
 }
