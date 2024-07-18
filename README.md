@@ -1,10 +1,6 @@
-Palace is a webgame in the same vein as: Town of Salem, EpicMafia, Mafia.gg
+A Game of Deduction by Chatting and Voting
 
-It's uniqueness is the simplicity of the codebase. Combining Django, Websockets, Javascript and jQuery,
-the source code is much more compact than that of the mentioned predecessors.
+WebSocket chat-room game. Coded with Python, Django, Django-Channels, jQuery and JS. It is currently in Alpha and should be web-ready in some months.
+Palace is a role-playing card game like the party game "mafia", or "werewolf". Players are given the roles Guard, King, Beast. Each of them has a task to perform and a secret to keep. 
 
-To understand how this was programmed, take a look at the Django-Channels library tutorial,
-in which a chatroom is made. This game is an upgraded version of that chatroom. The primary
-upgrade is the bot running on the redis server which tracks game-state.
-
-![Screenshot 2024-06-04 134041](https://github.com/jbezerra7/palacesite/assets/28406273/bbff2d52-ecb2-45cb-a63d-e8e2c57020d2)
+![img-palace1](https://github.com/user-attachments/assets/e76908e6-d0b1-4eec-a57c-a585fbfddf7a)
